@@ -1,0 +1,13 @@
+{
+  "id": "version_library",
+  "name": "更新",
+  "version": "1.0.0",
+  "order": 2,
+  "author": "BlenderHub Team",
+  "description": "Blender 版本统一管理",
+  "min_hub_version": "1.0.0",
+  "dependencies": [],
+  "entry_point": "modules.version_library.module:VersionLibraryModule",
+  "permissions": ["network", "filesystem"],
+  "features": []
+}
