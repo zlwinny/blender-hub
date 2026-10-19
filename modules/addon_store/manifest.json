@@ -1,0 +1,13 @@
+{
+  "id": "addon_store",
+  "name": "插件",
+  "version": "1.0.0",
+  "order": 3,
+  "author": "BlenderHub Team",
+  "description": "Blender 插件浏览/安装/卸载/禁用",
+  "min_hub_version": "1.0.0",
+  "dependencies": [],
+  "entry_point": "modules.addon_store.module:AddonStoreModule",
+  "permissions": ["network", "filesystem"],
+  "features": ["compatibility_check"]
+}
