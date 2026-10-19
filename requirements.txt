@@ -1,0 +1,8 @@
+# Blender Hub 运行时依赖
+# 精确版本见 requirements.lock.txt（打包与复现请用 lock 文件）
+
+PyQt6>=6.11.0
+requests>=2.32.0
+platformdirs>=4.10.0
+beautifulsoup4>=4.13.0
+typing_extensions>=4.8.0

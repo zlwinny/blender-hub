@@ -1,0 +1,9 @@
+beautifulsoup4==4.15.0
+cryptography==48.0.1
+platformdirs==4.10.0
+pyinstaller==6.20.0
+pyinstaller-hooks-contrib==2026.6
+PyQt6==6.11.0
+PyQt6-Qt6==6.11.1
+PyQt6_sip==13.11.1
+requests==2.34.2
