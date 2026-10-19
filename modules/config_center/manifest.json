@@ -1,0 +1,13 @@
+{
+  "id": "config_center",
+  "name": "配置",
+  "version": "1.0.0",
+  "order": 4,
+  "author": "BlenderHub Team",
+  "description": "Blender 配置快照（记录配置清单）",
+  "min_hub_version": "1.0.0",
+  "dependencies": [],
+  "entry_point": "modules.config_center.module:ConfigCenterModule",
+  "permissions": ["filesystem"],
+  "features": ["config_snapshot"]
+}
