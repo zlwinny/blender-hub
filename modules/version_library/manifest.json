@@ -1,6 +1,7 @@
 {
   "id": "version_library",
   "name": "更新",
+  "name_en": "Updates",
   "version": "1.0.0",
   "order": 2,
   "author": "BlenderHub Team",

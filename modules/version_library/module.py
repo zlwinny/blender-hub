@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Optional
 import uuid
 
-from core import theme  # pyright: ignore[reportImplicitRelativeImport]
+from core import i18n, theme  # pyright: ignore[reportImplicitRelativeImport]
 from core.api.module_api import BaseModule, ModuleContext
 from core.services.blender_service import BlenderInstallation, BlenderService
 
@@ -995,7 +995,8 @@ class VersionLibraryModule(BaseModule):
 
         # 标题行
         header = QHBoxLayout()
-        title = QLabel("📦 更新")
+        self._title_label = QLabel(i18n.tr("module.version.title"))
+        title = self._title_label
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
@@ -1164,6 +1165,11 @@ class VersionLibraryModule(BaseModule):
             return (time.time() - int(last)) > days * 86400
         except (TypeError, ValueError):
             return True
+
+    def retranslate(self) -> None:
+        """语言切换后刷新本页标题（主窗口统一调用）。"""
+        if getattr(self, "_title_label", None) is not None:
+            self._title_label.setText(i18n.tr("module.version.title"))
 
     def on_navigate_to(self):
         if not self._scan_completed:

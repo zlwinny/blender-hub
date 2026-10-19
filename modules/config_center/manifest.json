@@ -1,6 +1,7 @@
 {
   "id": "config_center",
   "name": "配置",
+  "name_en": "Config",
   "version": "1.0.0",
   "order": 4,
   "author": "BlenderHub Team",

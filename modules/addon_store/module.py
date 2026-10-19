@@ -54,7 +54,7 @@ if TYPE_CHECKING:
         version: str
         path: Path
 
-from core import theme  # pyright: ignore[reportImplicitRelativeImport]
+from core import i18n, theme  # pyright: ignore[reportImplicitRelativeImport]
 from core.api.module_api import BaseModule  # noqa: E402  # pyright: ignore[reportImplicitRelativeImport]
 from core.services.addon_service import AddonInfo, AddonService  # noqa: E402  # pyright: ignore[reportImplicitRelativeImport]
 from core.services.budeco_auth import (  # noqa: E402  # pyright: ignore[reportImplicitRelativeImport]
@@ -678,7 +678,8 @@ class AddonStoreModule(BaseModule):
 
         # === 标题行 + 搜索 + 统计 ===
         header = QHBoxLayout()
-        title = QLabel("\U0001f6d2 插件")
+        self._title_label = QLabel(i18n.tr("module.addon.title"))
+        title = self._title_label
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
@@ -902,6 +903,11 @@ class AddonStoreModule(BaseModule):
             pass
 
     @override
+    def retranslate(self) -> None:
+        """语言切换后刷新本页标题（主窗口统一调用）。"""
+        if getattr(self, "_title_label", None) is not None:
+            self._title_label.setText(i18n.tr("module.addon.title"))
+
     def on_navigate_to(self) -> None:
         """进入插件市场时刷新"""
         # 顺手清理上次安装可能残留的"正在解析下载地址"小窗口

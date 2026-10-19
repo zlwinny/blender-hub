@@ -1,6 +1,7 @@
 {
   "id": "addon_store",
   "name": "插件",
+  "name_en": "Addons",
   "version": "1.0.0",
   "order": 3,
   "author": "BlenderHub Team",

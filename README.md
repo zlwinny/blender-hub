@@ -172,7 +172,7 @@ packaging/               # PyInstaller spec and icon generation
 
 ## 🧪 Tests
 
-41 test scripts, grouped by whether they need a display, the network, or touch local state. Each one runs standalone and does not depend on the current working directory (they locate the project root via `parents[2]`):
+42 test scripts, grouped by whether they need a display, the network, or touch local state. Each one runs standalone and does not depend on the current working directory (they locate the project root via `parents[2]`):
 
 | Directory | Contents |
 | --- | --- |

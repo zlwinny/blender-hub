@@ -178,7 +178,8 @@ def main() -> int:
             ctx.warn(f"模块 {info.id} 未能提供界面", module="app")
             continue
         # 传模块实例，供 MainWindow 在页面切换时派发 on_navigate_to / on_navigate_away
-        win.add_page(info.id, info.name, widget, module=mm.load_module(info.id))
+        # 侧栏文案按当前界面语言取（zh=项目/更新/插件/配置，en=Projects/Updates/Addons/Config）
+        win.add_page(info.id, info.display_name(), widget, module=mm.load_module(info.id))
     # 应用设置已并入「配置中心」的「应用设置」标签页，不再单独占用侧边栏
 
     win.show()

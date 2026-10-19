@@ -22,9 +22,10 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from core import theme
+from core import i18n, theme
 
-DISCLAIMER_TITLE = "免责声明"
+# 文案由 i18n 提供（core/translations.py 的 disclaimer.*），支持中英切换
+DISCLAIMER_TITLE = i18n.tr("disclaimer.title")
 
 DISCLAIMER_TEXT = (
     "本软件按「现状」提供，不附带任何明示或暗示的担保；"
@@ -60,7 +61,7 @@ def build_dialog(parent=None, first_run: bool = True) -> QDialog:
     """构造免责声明对话框（不 exec，便于测试与复用）。"""
     dlg = QDialog(parent)
     dlg.setObjectName("disclaimerDialog")
-    dlg.setWindowTitle(DISCLAIMER_TITLE)
+    dlg.setWindowTitle(i18n.tr("disclaimer.title"))
     dlg.setModal(True)
     dlg.setMinimumWidth(540)
 
@@ -68,11 +69,11 @@ def build_dialog(parent=None, first_run: bool = True) -> QDialog:
     lay.setContentsMargins(26, 24, 26, 20)
     lay.setSpacing(14)
 
-    title = QLabel(DISCLAIMER_TITLE)
+    title = QLabel(i18n.tr("disclaimer.title"))
     title.setObjectName("dialogTitle")
     lay.addWidget(title)
 
-    body = QLabel(DISCLAIMER_TEXT)
+    body = QLabel(i18n.tr("disclaimer.text"))
     body.setObjectName("dialogBody")
     body.setWordWrap(True)
     body.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -83,12 +84,12 @@ def build_dialog(parent=None, first_run: bool = True) -> QDialog:
     buttons.setSpacing(10)
     buttons.addStretch()
     if first_run:
-        quit_btn = QPushButton("退出")
+        quit_btn = QPushButton(i18n.tr("disclaimer.quit"))
         quit_btn.setObjectName("ghost")
         quit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         quit_btn.clicked.connect(dlg.reject)
         buttons.addWidget(quit_btn)
-    close_btn = QPushButton("同意" if first_run else "关闭")
+    close_btn = QPushButton(i18n.tr("disclaimer.agree") if first_run else i18n.tr("common.close"))
     close_btn.setObjectName("primary")
     close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
     close_btn.clicked.connect(dlg.accept)

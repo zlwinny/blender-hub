@@ -34,6 +34,7 @@ class ModuleInfo:
         self.min_hub_version: str = manifest.get("min_hub_version", "1.0.0")
         self.dependencies: list[str] = manifest.get("dependencies", [])
         self.entry_point: str = manifest.get("entry_point", "")
+        self.name_en: str = str(manifest.get("name_en", self.name))
         self.permissions: list[str] = manifest.get("permissions", [])
         self.features: list[str] = manifest.get("features", [])
         # 侧边栏顺序：manifest 可选 "order" 字段，未声明时排在有声明之后（同序保持目录名顺序）
@@ -43,6 +44,13 @@ class ModuleInfo:
             self.order = 100
         self.module_path: Path = module_path
         self.instance: BaseModule | None = None
+
+    def display_name(self, lang: str | None = None) -> str:
+        """按当前界面语言返回侧栏显示名（manifest 的 name / name_en）。"""
+        from core.i18n import LANG_EN, current_lang
+
+        lang = lang or current_lang()
+        return self.name_en if lang == LANG_EN else self.name
 
 
 class ModuleManager:
@@ -218,7 +226,7 @@ class ModuleManager:
             # 实例化
             instance: BaseModule = cls()
             instance.id = info.id
-            instance.name = info.name
+            instance.name = info.display_name()
             instance.initialize(self._context)
 
             info.instance = instance

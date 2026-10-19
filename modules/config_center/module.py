@@ -20,7 +20,7 @@ import os
 from datetime import datetime
 import uuid
 
-from core import theme  # pyright: ignore[reportImplicitRelativeImport]
+from core import i18n, theme  # pyright: ignore[reportImplicitRelativeImport]
 from core.api.module_api import BaseModule
 
 
@@ -97,18 +97,19 @@ class ConfigCenterModule(BaseModule):
 
         # 标题
         header = QHBoxLayout()
-        title = QLabel("⚙️ 配置")
+        self._title_label = QLabel(i18n.tr("module.config.title"))
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
-        title.setFont(title_font)
-        title.setStyleSheet(f"color: {theme.Tokens.ON_CARD};")
-        header.addWidget(title)
+        self._title_label.setFont(title_font)
+        self._title_label.setStyleSheet(f"color: {theme.Tokens.ON_CARD};")
+        header.addWidget(self._title_label)
         header.addStretch()
         layout.addLayout(header)
 
-        # 两个标签页：Blender 配置（快照/迁移）与应用设置（原独立设置页）
-        tabs = QTabWidget()
+        # 两个标签页：Blender 配置（快照清单）与应用设置（原独立设置页）
+        self._tabs = QTabWidget()
+        tabs = self._tabs
         tabs.setObjectName("configTabs")
 
         # ── Tab 1：Blender 配置（三栏式 QSplitter）──
@@ -182,24 +183,26 @@ class ConfigCenterModule(BaseModule):
         restore_layout = QVBoxLayout(restore_group)
         restore_layout.setSpacing(8)
 
-        restore_btn = QPushButton("📥 恢复配置（规划中）")
+        self._restore_btn = QPushButton(i18n.tr("config.restore"))
+        restore_btn = self._restore_btn
         restore_btn.setObjectName("secondaryButton")
         restore_btn.setEnabled(False)
         restore_btn.setToolTip("恢复配置尚未实现；当前版本只记录配置清单，不会写回 Blender")
         restore_btn.clicked.connect(self._restore_snapshot)
         restore_layout.addWidget(restore_btn)
 
-        migrate_btn = QPushButton("🔄 跨版本迁移（规划中）")
+        self._migrate_btn = QPushButton(i18n.tr("config.migrate"))
+        migrate_btn = self._migrate_btn
         migrate_btn.setObjectName("secondaryButton")
         migrate_btn.setEnabled(False)
         migrate_btn.setToolTip("跨版本迁移尚未实现；当前版本只记录配置清单")
         migrate_btn.clicked.connect(self._migrate_config)
         restore_layout.addWidget(migrate_btn)
 
-        hint = QLabel("恢复 / 迁移尚未实现，当前仅记录配置清单，不会改动 Blender 配置。")
-        hint.setWordWrap(True)
-        hint.setStyleSheet(f"color: {theme.Tokens.TEXT_MUTED}; font-size: 11px;")
-        restore_layout.addWidget(hint)
+        self._hint_label = QLabel(i18n.tr("config.hint"))
+        self._hint_label.setWordWrap(True)
+        self._hint_label.setStyleSheet(f"color: {theme.Tokens.TEXT_MUTED}; font-size: 11px;")
+        restore_layout.addWidget(self._hint_label)
 
         delete_btn = QPushButton("🗑 删除快照")
         delete_btn.setObjectName("dangerButton")
@@ -226,13 +229,13 @@ class ConfigCenterModule(BaseModule):
         config_scroll.setWidget(splitter)
         blender_layout.addWidget(config_scroll, 1)
         self._install_responsive(blender_page)
-        tabs.addTab(blender_page, "Blender 配置")
+        tabs.addTab(blender_page, i18n.tr("config.tab.blender"))
 
         # ── Tab 2：应用设置（设置页整体嵌入，不再占用侧边栏）──
         if self.ctx is not None:
             from modules.settings import SettingsModule
 
-            tabs.addTab(SettingsModule(self.ctx, show_header=False), "应用设置")
+            tabs.addTab(SettingsModule(self.ctx, show_header=False), i18n.tr("config.tab.app"))
 
         layout.addWidget(tabs, 1)
 
@@ -269,6 +272,26 @@ class ConfigCenterModule(BaseModule):
         elif not narrow and splitter.orientation() != Qt.Orientation.Horizontal:
             splitter.setOrientation(Qt.Orientation.Horizontal)
             splitter.setSizes([280, 400, 240])
+
+    def retranslate(self) -> None:
+        """语言切换后刷新本页文案（主窗口统一调用，无需重启）。"""
+        if getattr(self, "_title_label", None) is not None:
+            self._title_label.setText(i18n.tr("module.config.title"))
+        tabs = getattr(self, "_tabs", None)
+        if tabs is not None:
+            tabs.setTabText(0, i18n.tr("config.tab.blender"))
+            if tabs.count() > 1:
+                tabs.setTabText(1, i18n.tr("config.tab.app"))
+                settings_page = tabs.widget(1)
+                fn = getattr(settings_page, "retranslate", None)
+                if callable(fn):
+                    fn()
+        if getattr(self, "_restore_btn", None) is not None:
+            self._restore_btn.setText(i18n.tr("config.restore"))
+        if getattr(self, "_migrate_btn", None) is not None:
+            self._migrate_btn.setText(i18n.tr("config.migrate"))
+        if getattr(self, "_hint_label", None) is not None:
+            self._hint_label.setText(i18n.tr("config.hint"))
 
     def on_navigate_to(self):
         self._load_snapshots()

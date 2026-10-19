@@ -23,7 +23,7 @@ import json
 import struct
 import threading
 
-from core import theme  # pyright: ignore[reportImplicitRelativeImport]
+from core import i18n, theme  # pyright: ignore[reportImplicitRelativeImport]
 from core.api.module_api import BaseModule
 from core.services.blender_service import BlenderInstallation
 
@@ -542,7 +542,8 @@ class ProjectCenterModule(BaseModule):
 
         # 标题
         header = QHBoxLayout()
-        title = QLabel("📁 项目")
+        self._title_label = QLabel(i18n.tr("module.project.title"))
+        title = self._title_label
         title_font = QFont()
         title_font.setPointSize(18)
         title_font.setBold(True)
@@ -664,6 +665,11 @@ class ProjectCenterModule(BaseModule):
             if str(card.project.path) == path_str:
                 card.set_thumbnail(pm)
                 break
+
+    def retranslate(self) -> None:
+        """语言切换后刷新本页标题（主窗口统一调用）。"""
+        if getattr(self, "_title_label", None) is not None:
+            self._title_label.setText(i18n.tr("module.project.title"))
 
     def on_navigate_to(self):
         self._load_bindings()

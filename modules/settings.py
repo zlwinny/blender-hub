@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QMessageBox, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
-from core import theme
+from core import i18n, theme
 from core.services.download_service import DownloadService
 from core.widgets import badge, page_header, section_title
 
@@ -43,10 +43,10 @@ class _LinkRow(QFrame):
         lay.setContentsMargins(4, 9, 4, 9)
         lay.setSpacing(8)
 
-        label = QLabel(text)
-        label.setObjectName("linkRowText")
-        label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        lay.addWidget(label)
+        self.text_label = QLabel(text)
+        self.text_label.setObjectName("linkRowText")
+        self.text_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        lay.addWidget(self.text_label)
         lay.addStretch()
 
         arrow = QLabel("↗" if external else "›")
@@ -65,7 +65,51 @@ class SettingsModule(QWidget):
         super().__init__()
         self.ctx = ctx
         self._show_header = show_header
+        # 控件 ↔ 词条 绑定表，供 retranslate() 在切换语言时刷新文案
+        self._tr_items: list = []
         self._build()
+
+    # ── 多语言支持 ──────────────────────────────────────────────────
+    def _bind_text(self, widget, key: str, attr: str = "setText", transform=None) -> None:
+        """把控件文案绑定到词条，立即应用并在切换语言时自动刷新。
+
+        transform 用于保留原样式（例如 section_title 的小标题大写）。
+        """
+        self._tr_items.append((widget, key, attr, transform))
+        value = i18n.tr(key)
+        getattr(widget, attr)(transform(value) if transform else value)
+
+    def retranslate(self) -> None:
+        """语言切换后刷新本页所有已绑定文案（主窗口统一调用）。"""
+        for widget, key, attr, transform in self._tr_items:
+            try:
+                value = i18n.tr(key)
+                getattr(widget, attr)(transform(value) if transform else value)
+            except RuntimeError:
+                pass  # 控件已被销毁（页面重建等），跳过即可
+
+    def _row_language(self) -> QWidget:
+        """界面语言：中文 / English 切换，即时生效。"""
+        f, lay = self._panel("settings.language.label")
+        box = QComboBox()
+        box.addItem(i18n.tr("lang.zh"), i18n.LANG_ZH)
+        box.addItem(i18n.tr("lang.en"), i18n.LANG_EN)
+        box.setFixedWidth(220)
+        cur = i18n.current_lang()
+        idx = box.findData(cur)
+        box.setCurrentIndex(idx if idx >= 0 else 0)
+
+        def on_change() -> None:
+            lang = box.currentData()
+            if not lang or lang == i18n.current_lang():
+                return
+            i18n.set_lang(lang)  # 会通知主窗口刷新侧栏与各页
+            self._notify(i18n.tr("settings.language.applied"))
+
+        box.currentIndexChanged.connect(on_change)
+        lay.addWidget(box)
+        lay.addStretch()
+        return f
 
     def _build(self) -> None:
         # 内容放进滚动区：关于面板较高，小窗口下也能完整浏览
@@ -80,7 +124,10 @@ class SettingsModule(QWidget):
         root.setContentsMargins(24, 20, 24, 20)
         root.setSpacing(14)
         if self._show_header:  # 嵌入配置中心标签页时不再重复标题
-            root.addWidget(page_header("设置", "下载镜像源、安装位置与本地数据"))
+            root.addWidget(page_header(
+                i18n.tr("settings.header.title"), i18n.tr("settings.header.subtitle")
+            ))
+        root.addWidget(self._row_language())
         root.addWidget(self._row_mirror())
         root.addWidget(self._row_install_dir())
         root.addWidget(self._row_dirs())
@@ -89,16 +136,19 @@ class SettingsModule(QWidget):
         scroll.setWidget(content)
         outer.addWidget(scroll)
 
-    def _panel(self, title: str) -> tuple[QFrame, QHBoxLayout]:
+    def _panel(self, key: str) -> tuple[QFrame, QHBoxLayout]:
         f = QFrame()
         f.setObjectName("panel")
         lay = QHBoxLayout(f)
         lay.setContentsMargins(16, 14, 16, 14)
-        lay.addWidget(section_title(title))
+        # 注意：section_title() 只是创建 QLabel，必须再 addWidget 才会显示
+        title_label = section_title(i18n.tr(key))
+        self._bind_text(title_label, key, transform=str.upper)  # section_title 原样为大写
+        lay.addWidget(title_label)
         return f, lay
 
     def _row_mirror(self) -> QWidget:
-        f, lay = self._panel("下载镜像源")
+        f, lay = self._panel("settings.mirror.label")
         self.box = QComboBox()
         for k, base in DownloadService.MIRRORS.items():
             self.box.addItem(f"{MIRROR_LABEL.get(k, k)}  ·  {base}", k)
@@ -126,7 +176,7 @@ class SettingsModule(QWidget):
 
     def _row_install_dir(self) -> QWidget:
         """Blender 安装位置 — 改动后必须点「保存」才落盘（设置过就要 save）。"""
-        f, lay = self._panel("Blender 安装位置")
+        f, lay = self._panel("settings.install_dir.label")
         self._install_edit = QLineEdit()
         self._install_edit.setPlaceholderText("新版本将安装到「该目录/<版本号>」")
         self._install_edit.setFixedWidth(380)
@@ -134,13 +184,15 @@ class SettingsModule(QWidget):
         self._install_edit.textChanged.connect(self._mark_install_dirty)
         lay.addWidget(self._install_edit)
 
-        b = QPushButton("浏览...")
+        b = QPushButton()
         b.setObjectName("ghost")
         b.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._bind_text(b, "common.browse")
         b.clicked.connect(self._browse_install_dir)
         lay.addWidget(b)
 
-        self._install_save = QPushButton("保存")
+        self._install_save = QPushButton()
+        self._bind_text(self._install_save, "common.save")
         self._install_save.setObjectName("primaryButton")
         self._install_save.setCursor(Qt.CursorShape.PointingHandCursor)
         self._install_save.setEnabled(False)
@@ -204,12 +256,14 @@ class SettingsModule(QWidget):
         self._notify("安装位置已保存")
 
     def _row_dirs(self) -> QWidget:
-        f, lay = self._panel("本地数据")
-        for txt, path in (
-            ("数据目录", self.ctx.config.base_dir),
-            ("日志目录", self.ctx.config.base_dir / "logs"),
+        f, lay = self._panel("settings.dirs.label")
+        for key, path in (
+            ("settings.dirs.data", self.ctx.config.base_dir),
+            ("settings.dirs.logs", self.ctx.config.base_dir / "logs"),
         ):
-            lay.addWidget(QLabel(txt))
+            lbl = QLabel()
+            self._bind_text(lbl, key)
+            lay.addWidget(lbl)
             b = QPushButton()
             b.setObjectName("ghost")
             b.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -222,7 +276,8 @@ class SettingsModule(QWidget):
             b.clicked.connect(lambda _, p=path: subprocess.Popen(["explorer", str(p)]))
             lay.addWidget(b)
 
-            copy_btn = QPushButton("复制")
+            copy_btn = QPushButton()
+            self._bind_text(copy_btn, "common.copy")
             copy_btn.setObjectName("ghost")
             copy_btn.setFixedWidth(56)
             copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -270,26 +325,32 @@ class SettingsModule(QWidget):
         head.addStretch()
         lay.addLayout(head)
 
-        desc = QLabel("Blender 版本 / 项目 / 插件的一体化桌面管理工具。本地优先，开源无广告。")
+        desc = QLabel()
         desc.setWordWrap(True)
         desc.setStyleSheet(f"color: {theme.Tokens.TEXT_SUB}; font-size: 12.5px;")
+        self._bind_text(desc, "settings.about.description")
         lay.addWidget(desc)
 
-        lay.addWidget(section_title("维护者"))
+        maintainer_title = section_title(i18n.tr("settings.about.maintainer"))
+        self._bind_text(maintainer_title, "settings.about.maintainer", transform=str.upper)
+        lay.addWidget(maintainer_title)
         maintainer = QLabel("BlenderHub Team")
         maintainer.setStyleSheet(f"color: {theme.Tokens.TEXT}; font-size: 13px;")
         lay.addWidget(maintainer)
 
-        lay.addWidget(section_title("更多"))
+        more_title = section_title(i18n.tr("settings.about.more"))
+        self._bind_text(more_title, "settings.about.more", transform=str.upper)
+        lay.addWidget(more_title)
         rows = (
-            ("免责声明", self._show_disclaimer_dialog, False),
-            ("开源许可证 MIT", self._show_license_dialog, False),
-            ("Blender 官网", lambda: self._open_url("https://www.blender.org/"), True),
-            ("Blender 手册", lambda: self._open_url("https://docs.blender.org/"), True),
-            ("打开日志目录", self._open_log_dir, True),
+            ("settings.about.disclaimer", self._show_disclaimer_dialog, False),
+            ("settings.about.license", self._show_license_dialog, False),
+            ("settings.about.site", lambda: self._open_url("https://www.blender.org/"), True),
+            ("settings.about.manual", lambda: self._open_url("https://docs.blender.org/"), True),
+            ("settings.about.log_dir", self._open_log_dir, True),
         )
-        for text, handler, external in rows:
-            row = _LinkRow(text, external=external)
+        for key, handler, external in rows:
+            row = _LinkRow(i18n.tr(key), external=external)
+            self._bind_text(row.text_label, key)
             row.clicked.connect(handler)
             lay.addWidget(row)
         return f

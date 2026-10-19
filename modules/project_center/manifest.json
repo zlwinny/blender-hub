@@ -1,6 +1,7 @@
 {
   "id": "project_center",
   "name": "项目",
+  "name_en": "Projects",
   "version": "1.0.0",
   "order": 1,
   "author": "BlenderHub Team",

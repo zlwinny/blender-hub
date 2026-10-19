@@ -170,6 +170,14 @@ class MainWindow(QMainWindow):
         except Exception as e:  # noqa: BLE001
             print(f"[app] 订阅 ui.toast 失败（不影响启动）: {e}")
 
+        # 语言切换：侧栏与各页文案即时刷新（无需重启）
+        try:
+            from core import i18n
+
+            i18n.add_listener(self.apply_language)
+        except Exception as e:  # noqa: BLE001
+            print(f"[app] 注册语言切换回调失败（不影响启动）: {e}")
+
         self._restore_geometry()
 
         # 边缘缩放靠 QApplication 级过滤器捕获：装在 app 上，
@@ -548,6 +556,27 @@ class MainWindow(QMainWindow):
             self.select(0)
 
     # ── 侧栏展开 / 合并（Clash 三横按钮交互）──────────────────────────────
+    def apply_language(self, _lang: str = "") -> None:
+        """切换界面语言：刷新侧栏文案并让各模块重刷自身文案（无需重启）。"""
+        mm = getattr(self.ctx, "module_manager", None)
+        infos = {i.id: i for i in mm.get_all_modules()} if mm is not None else {}
+
+        for idx, (key, _label, widget, module) in enumerate(self._pages):
+            info = infos.get(key)
+            label = info.display_name() if info is not None else _label
+            self._pages[idx] = (key, label, widget, module)
+            if idx < len(self._nav_buttons) and not self._nav_collapsed:
+                self._nav_buttons[idx].setText(label)
+            # 模块自己实现 retranslate() 来更新已创建控件上的文案
+            fn = getattr(module, "retranslate", None)
+            if callable(fn):
+                try:
+                    fn()
+                except Exception as e:  # noqa: BLE001
+                    log = getattr(self.ctx, "log_service", None)
+                    if log is not None:
+                        log.debug(f"retranslate('{key}') failed: {e}", module="main_window")
+
     def _toggle_nav(self) -> None:
         self._nav_collapsed = not self._nav_collapsed
         QSettings("BlenderHub Team", "BlenderHub").setValue(
