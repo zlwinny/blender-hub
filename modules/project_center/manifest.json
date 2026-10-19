@@ -1,0 +1,13 @@
+{
+  "id": "project_center",
+  "name": "项目",
+  "version": "1.0.0",
+  "order": 1,
+  "author": "BlenderHub Team",
+  "description": "扫描最近 .blend 项目，绑定版本打开",
+  "min_hub_version": "1.0.0",
+  "dependencies": [],
+  "entry_point": "modules.project_center.module:ProjectCenterModule",
+  "permissions": ["filesystem"],
+  "features": ["project_scan", "version_binding"]
+}
